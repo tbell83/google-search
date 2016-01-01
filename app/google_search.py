@@ -1,6 +1,8 @@
-from flask import Flask, request
+from flask import Flask, request, Response
 from flask_restful import Resource, Api, reqparse
 from google import google
+import requests
+import json
 
 app = Flask(__name__)
 api = Api(app)
@@ -15,32 +17,32 @@ def googleTextSearch(query):
             search_results = google.search(query+' j')
 
         if len(search_results) > 0:
-            result = search_results[0].description
-            result_url = search_results[0].link
-            results = {'query_status': True, 'search_query': query, 'search_result': result, 'result_url': result_url}
+            return search_results[0]
         else:
-            results = {'query_status': False}
+            return False
+
     except:
-        results = {'query_status': False}
-
-    return results
-
-
-class HelloWorld(Resource):
-    def get(self):
-        return {'hello': 'world'}
+        return False
 
 class Search(Resource):
-    def get(self, query):
-        return googleTextSearch(query)
+    def get(self):
+        token = request.args.get('token')
+        if token == slack_token:
+            query = request.args.get('text')
+            result = googleTextSearch(query)
+            if result:
+                attachment = {"attachments":[{"fallback":query,"pretext":query,"color":"#FFF","fields": [{"title":query,"value":'{0}\n{1}'.format(result.description, result.link)}],"image_url": url}]}
+                print "\n\n\n{0}\n{1}\n\n\n".format(url, attachment)
+                data = json.dumps(attachment)
+                post = requests.post(response_url, data=data)
+                resp = Response(status=200)
+            else:
+                resp = Response(status=404)
+            return resp
+        else:
+            return 'Unauthorized'
 
-class Farts(Resource):
-    def get(self, query):
-        return {'fart': 'braaappppp'}
-
-api.add_resource(HelloWorld, '/')
-api.add_resource(Farts, '/farts/<string:query>')
-api.add_resource(Search, '/search/<string:query>')
+api.add_resource(Search, '/')
 
 if __name__ == '__main__':
     app.run(debug=True)
