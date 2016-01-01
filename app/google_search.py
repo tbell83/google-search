@@ -6,7 +6,7 @@ import json
 
 app = Flask(__name__)
 api = Api(app)
-
+slack_token = 'poops'
 
 def googleTextSearch(query):
     query = query.replace('+', ' ')
